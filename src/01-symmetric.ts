@@ -1,15 +1,15 @@
 import { createCipheriv, createDecipheriv, randomBytes } from "crypto";
 
 // SYMMETRIC ENCRYPTION (AES-256-GCM)
-// Aynı anahtar şifreler ve çözer. Hızlı, ama anahtarı karşı tarafa nasıl ileteceksin?
+// Same key encrypts and decrypts. Fast, but how do you share the key?
 
-const key = randomBytes(32); // 256-bit anahtar
-const iv = randomBytes(12); // initialization vector (her mesajda farklı olmalı)
+const key = randomBytes(32); // 256-bit key
+const iv = randomBytes(12); // initialization vector (must be unique per message)
 
 function encrypt(plaintext: string, key: Buffer, iv: Buffer): { ciphertext: Buffer; tag: Buffer } {
   const cipher = createCipheriv("aes-256-gcm", key, iv);
   const ciphertext = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
-  const tag = cipher.getAuthTag(); // mesajın değiştirilmediğini doğrular
+  const tag = cipher.getAuthTag(); // verifies the message hasn't been tampered with
   return { ciphertext, tag };
 }
 
@@ -20,8 +20,8 @@ function decrypt(ciphertext: Buffer, key: Buffer, iv: Buffer, tag: Buffer): stri
 }
 
 // Test
-const message = "Merhaba, bu gizli bir mesaj!";
+const message = "Hello, this is a secret message!";
 const encrypted = encrypt(message, key, iv);
-console.log("Orijinal:", message);
-console.log("Şifreli:", encrypted.ciphertext.toString("hex"));
-console.log("Çözülen:", decrypt(encrypted.ciphertext, key, iv, encrypted.tag));
+console.log("Original:", message);
+console.log("Encrypted:", encrypted.ciphertext.toString("hex"));
+console.log("Decrypted:", decrypt(encrypted.ciphertext, key, iv, encrypted.tag));

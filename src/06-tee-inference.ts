@@ -10,18 +10,18 @@ import {
 } from "crypto";
 
 // ============================================================
-// E2E ENCRYPTED GPU INFERENCE — TAM SİMÜLASYON
+// E2E ENCRYPTED GPU INFERENCE — FULL SIMULATION
 // ============================================================
 //
-// Senaryo: Alexandria benzeri bir sistem
-// 1. Laptop'ta ekran görüntüsü alınır
-// 2. Uzaktaki GPU TEE'ye şifreli gönderilir
-// 3. GPU TEE içinde AI inference çalışır
-// 4. Sonuç şifreli döner
-// 5. Hiç kimse — sunucu OS, cloud sağlayıcı, admin — veriyi göremez
+// Scenario: A system similar to confidential AI inference platforms
+// 1. A screenshot is captured on the laptop
+// 2. It's sent encrypted to a remote GPU TEE
+// 3. AI inference runs inside the GPU TEE
+// 4. The result returns encrypted
+// 5. Nobody — host OS, cloud provider, admin — can see the data
 
 // ============================================================
-// AKTÖRLER
+// ACTORS
 // ============================================================
 
 class NVIDIACertAuthority {
@@ -80,7 +80,7 @@ class GPUTeeTrust {
       signature: signer.sign(this.privateKey),
       certificate: this.certificate,
       gpuPublicKey: this.publicKey,
-      _dh: dh, // internal, TEE içinde kalır
+      _dh: dh, // internal, stays inside the TEE
     };
   }
 
@@ -89,15 +89,15 @@ class GPUTeeTrust {
     iv: Buffer;
     tag: Buffer;
   } {
-    // TEE içinde deşifre
+    // Decrypt inside TEE
     const decipher = createDecipheriv("aes-256-gcm", sessionKey, iv);
     decipher.setAuthTag(tag);
     const plaintext = decipher.update(encryptedInput) + decipher.final("utf8");
 
-    // AI modeli çalıştır (simüle)
+    // Run AI model (simulated)
     const aiResult = this.fakeAIModel(plaintext);
 
-    // Sonucu TEE içinde şifrele
+    // Encrypt result inside TEE
     const resultIv = randomBytes(12);
     const cipher = createCipheriv("aes-256-gcm", sessionKey, resultIv);
     const encryptedResult = Buffer.concat([cipher.update(aiResult, "utf8"), cipher.final()]);
@@ -132,40 +132,40 @@ class ClientLaptop {
     attestation: ReturnType<GPUTeeTrust["attest"]>,
     challenge: Buffer
   ): boolean {
-    // 1: NVIDIA sertifikası geçerli mi?
+    // 1: Is the NVIDIA certificate valid?
     const certVerifier = createVerify("SHA256");
     certVerifier.update(attestation.gpuPublicKey);
     if (!certVerifier.verify(this.nvidiaPublicKey, attestation.certificate)) {
-      console.log("  FAIL: NVIDIA sertifikası geçersiz");
+      console.log("  FAIL: Invalid NVIDIA certificate");
       return false;
     }
-    console.log("  ✓ NVIDIA sertifikası geçerli");
+    console.log("  ✓ NVIDIA certificate valid");
 
-    // 2: Rapor GPU tarafından imzalanmış mı?
+    // 2: Was the report signed by the GPU?
     const reportVerifier = createVerify("SHA256");
     reportVerifier.update(JSON.stringify(attestation.report));
     if (!reportVerifier.verify(attestation.gpuPublicKey, attestation.signature)) {
-      console.log("  FAIL: Attestation imzası geçersiz");
+      console.log("  FAIL: Invalid attestation signature");
       return false;
     }
-    console.log("  ✓ Attestation imzası geçerli");
+    console.log("  ✓ Attestation signature valid");
 
-    // 3: Challenge eşleşiyor mu?
+    // 3: Does the challenge match?
     if (attestation.report.challenge !== challenge.toString("hex")) {
-      console.log("  FAIL: Challenge eşleşmiyor (replay attack?)");
+      console.log("  FAIL: Challenge mismatch (replay attack?)");
       return false;
     }
-    console.log("  ✓ Challenge eşleşiyor");
+    console.log("  ✓ Challenge matches");
 
-    // 4: Firmware güvenli mi?
+    // 4: Is the firmware trusted?
     const trustedHash = createHash("sha256")
       .update("nvidia-tee-firmware-v3.2.1-verified")
       .digest("hex");
     if (attestation.report.firmwareHash !== trustedHash) {
-      console.log("  FAIL: Firmware güvenli değil");
+      console.log("  FAIL: Firmware not trusted");
       return false;
     }
-    console.log("  ✓ Firmware güvenli listede");
+    console.log("  ✓ Firmware on trusted list");
 
     return true;
   }
@@ -196,71 +196,70 @@ class ClientLaptop {
 }
 
 // ============================================================
-// SİMÜLASYON
+// SIMULATION
 // ============================================================
 
-console.log("╔══════════════════════════════════════════════╗");
-console.log("║  E2E ENCRYPTED GPU INFERENCE SİMÜLASYONU    ║");
-console.log("╚══════════════════════════════════════════════╝\n");
+console.log("╔══════════════════════════════════════════════════╗");
+console.log("║  E2E ENCRYPTED GPU INFERENCE SIMULATION          ║");
+console.log("╚══════════════════════════════════════════════════╝\n");
 
-// Fabrika
-console.log("▸ NVIDIA fabrikada GPU üretiyor...");
+// Factory
+console.log("▸ NVIDIA manufacturing GPU...");
 const nvidia = new NVIDIACertAuthority();
 const gpu = new GPUTeeTrust(nvidia);
-console.log("  GPU üretildi, private key fuse'a yakıldı, sertifika verildi\n");
+console.log("  GPU manufactured, private key burned into fuses, certificate issued\n");
 
 // Laptop
 const laptop = new ClientLaptop(nvidia.publicKey);
 
-// ADIM 1: Attestation
-console.log("▸ ADIM 1: Laptop attestation istiyor");
+// STEP 1: Attestation
+console.log("▸ STEP 1: Laptop requests attestation");
 const challenge = laptop.requestAttestation();
 const attestation = gpu.attest(challenge);
-console.log("  GPU attestation raporu üretti\n");
+console.log("  GPU produced attestation report\n");
 
-// ADIM 2: Doğrulama
-console.log("▸ ADIM 2: Laptop doğruluyor");
+// STEP 2: Verification
+console.log("▸ STEP 2: Laptop verifying");
 const trusted = laptop.verifyAttestation(attestation, challenge);
 if (!trusted) {
-  console.log("\n⛔ GPU güvenilir değil! İşlem iptal.");
+  console.log("\n⛔ GPU is not trusted! Aborting.");
   process.exit(1);
 }
-console.log("  → GPU güvenilir!\n");
+console.log("  → GPU is trusted!\n");
 
-// ADIM 3: Güvenli kanal
-console.log("▸ ADIM 3: DH ile güvenli kanal kuruluyor");
+// STEP 3: Secure channel
+console.log("▸ STEP 3: Establishing secure channel via DH");
 const sessionKey = laptop.establishSecureChannel(attestation.report.dhPublicKey);
-// GPU tarafı da aynı session key'i hesaplar (simülasyonda direkt kullanıyoruz)
-console.log("  Session key oluştu:", sessionKey.toString("hex").slice(0, 30) + "...\n");
+console.log("  Session key created:", sessionKey.toString("hex").slice(0, 30) + "...\n");
 
-// ADIM 4: Ekran verisi gönder
-console.log("▸ ADIM 4: Ekran görüntüsü şifreleniyor");
+// STEP 4: Send screen data
+console.log("▸ STEP 4: Encrypting screen capture");
 const screenCapture = "spreadsheet: Q2 financial data, revenue numbers, employee salaries";
-console.log("  Ham veri:", screenCapture);
+console.log("  Raw data:", screenCapture);
 const { encrypted, iv, tag } = laptop.encryptScreenData(screenCapture);
-console.log("  Şifreli:", encrypted.toString("hex").slice(0, 40) + "...");
-console.log("  (sunucu OS, cloud admin, hacker → hiçbiri okuyamaz)\n");
+console.log("  Encrypted:", encrypted.toString("hex").slice(0, 40) + "...");
+console.log("  (host OS, cloud admin, hacker → none of them can read this)\n");
 
-// ADIM 5: GPU TEE içinde inference
-console.log("▸ ADIM 5: GPU TEE içinde inference çalışıyor");
-console.log("  [TEE] Veri deşifre edildi (sadece TEE içinde)");
-console.log("  [TEE] AI modeli çalışıyor...");
+// STEP 5: GPU TEE inference
+console.log("▸ STEP 5: GPU running inference inside TEE");
+console.log("  [TEE] Data decrypted (only inside TEE)");
+console.log("  [TEE] AI model running...");
 const result = gpu.runInference(encrypted, sessionKey, iv, tag);
-console.log("  [TEE] Sonuç şifrelendi, TEE dışına şifreli çıkıyor\n");
+console.log("  [TEE] Result encrypted, leaves TEE as ciphertext\n");
 
-// ADIM 6: Sonucu çöz
-console.log("▸ ADIM 6: Laptop sonucu çözüyor");
+// STEP 6: Decrypt result
+console.log("▸ STEP 6: Laptop decrypts result");
 const aiResponse = laptop.decryptResult(result.encryptedResult, result.iv, result.tag);
-console.log("  AI yanıtı:", aiResponse, "\n");
+console.log("  AI response:", aiResponse, "\n");
 
-// Özet
-console.log("╔══════════════════════════════════════════════╗");
-console.log("║  KİM NE GÖRDÜ?                              ║");
-console.log("╠══════════════════════════════════════════════╣");
-console.log("║  Laptop         → ham veri + AI sonucu  ✓   ║");
-console.log("║  GPU TEE içi    → ham veri + AI sonucu  ✓   ║");
-console.log("║  Sunucu OS      → sadece şifreli blob   ✗   ║");
-console.log("║  Cloud admin    → sadece şifreli blob   ✗   ║");
-console.log("║  Hacker         → sadece şifreli blob   ✗   ║");
-console.log("║  NVIDIA         → sadece sertifika      ✗   ║");
-console.log("╚══════════════════════════════════════════════╝");
+// Summary
+console.log("╔══════════════════════════════════════════════════╗");
+console.log("║  WHO SAW WHAT?                                   ║");
+console.log("╠══════════════════════════════════════════════════╣");
+console.log("║  Laptop         → raw data + AI result      ✓   ║");
+console.log("║  GPU TEE inside → raw data + AI result      ✓   ║");
+console.log("║  Host OS        → encrypted blob only       ✗   ║");
+console.log("║  Cloud admin    → encrypted blob only       ✗   ║");
+console.log("║  Hacker         → encrypted blob only       ✗   ║");
+console.log("║  NVIDIA         → certificate only          ✗   ║");
+console.log("╚══════════════════════════════════════════════════╝");
