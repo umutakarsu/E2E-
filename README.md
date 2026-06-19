@@ -4,6 +4,12 @@ A hands-on learning repo that builds up to **end-to-end encrypted GPU inference*
 
 The goal: understand how systems like NVIDIA's H100 Confidential Computing and confidential AI inference platforms process sensitive data (e.g. screen captures) inside a hardware-isolated **Trusted Execution Environment (TEE)** — where not even the host operating system can see the plaintext.
 
+> **Reverse-engineering note:** this crypto core is the *verifiable spine* of a
+> real product (Alexandria / Ambient) that records desktop work, redacts PII
+> locally, and replays it as agentic clones. For an outside-in teardown of how
+> that whole system most likely works — and how `src/01`–`src/06` map onto its
+> "auditable open-source core" — see **[`TEARDOWN.md`](./TEARDOWN.md)**.
+
 ## What's inside
 
 Each file builds on the previous one. Run them in order.
