@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Alexandria · workflow → clone</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">Alexandria</div>
+      <div class="brand-sub">record how your best employees work</div>
+      <div class="mode" id="modeBadge" title="analysis backend">…</div>
+    </header>
+
+    <main class="layout">
+      <!-- Sidebar: captured workflows ("tasks") -->
+      <aside class="sidebar">
+        <div class="sidebar-head">
+          <span>Workflows</span>
+          <button id="newTaskBtn" class="mini" title="New workflow">+ new</button>
+        </div>
+        <ul id="taskList" class="task-list"></ul>
+        <div class="sidebar-foot">
+          <span class="dot"></span> a task = one captured human workflow
+        </div>
+      </aside>
+
+      <!-- Detail pane -->
+      <section class="detail" id="detail">
+        <div class="empty" id="emptyState">
+          <h2>Pick a workflow</h2>
+          <p>
+            Each workflow holds a raw, intent-free action log (what Ambient + the
+            accessibility tree capture). Add a <strong>voice note</strong> to
+            explain <em>why</em> you do it — then let ALX-1 turn it into an
+            action + intent trace and a runnable clone.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <!-- New task dialog -->
+    <dialog id="newTaskDialog">
+      <form method="dialog" id="newTaskForm">
+        <h3>New workflow</h3>
+        <label>Title<input name="title" required placeholder="e.g. Reconcile Q3 accruals" /></label>
+        <label>Role<input name="role" placeholder="e.g. FP&A Analyst" /></label>
+        <label>Raw action trace
+          <textarea name="rawTrace" rows="6" placeholder="00:00 open workbook&#10;00:06 select range B4:B60&#10;00:18 insert PivotTable&#10;..."></textarea>
+        </label>
+        <div class="dialog-actions">
+          <button value="cancel" class="ghost">Cancel</button>
+          <button value="create" class="primary" id="createTaskBtn">Create</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
